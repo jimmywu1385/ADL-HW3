@@ -3,7 +3,7 @@ from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
 import torch
-from transformers import AutoTokenizer, T5Tokenizer
+from transformers import T5Tokenizer
 from transformers import AutoModelForSeq2SeqLM, DataCollatorForSeq2Seq
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
 from dataset import S2SData
