@@ -1,0 +1,12 @@
+torch==1.10.2
+transformers
+datasets
+accelerate
+sentencepiece
+rouge
+spacy
+nltk
+ckiptagger
+tqdm
+pandas
+jsonlines
