@@ -3,7 +3,7 @@ from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
 import torch
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, T5Tokenizer
 from transformers import AutoModelForSeq2SeqLM, DataCollatorForSeq2Seq
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
 from dataset import S2SData
@@ -18,7 +18,7 @@ def set_random(seed):
 def main(args):
     set_random(args.random_seed)
 
-    tokenizer = AutoTokenizer.from_pretrained(args.pretrained_path)
+    tokenizer = T5Tokenizer.from_pretrained(args.pretrained_path)
     model = AutoModelForSeq2SeqLM.from_pretrained(args.pretrained_path)
 
     train_dataset = S2SData(args.train_path, args.prefix, tokenizer, args.max_input, args.max_output)
