@@ -7,10 +7,10 @@ from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
 import numpy as np
 
 from dataset import S2SData
-from tw_rouge import get_rouge
+#from tw_rouge import get_rouge
 
-import tensorflow as tf
-tf.config.set_visible_devices([], 'GPU')
+#import tensorflow as tf
+#tf.config.set_visible_devices([], 'GPU')
 
 def main(args):
     tokenizer = T5Tokenizer.from_pretrained(args.pretrained_path)
@@ -18,7 +18,7 @@ def main(args):
 
     train_dataset = S2SData(args.train_path, tokenizer, args.max_input, args.max_output, "train")
     eval_dataset = S2SData(args.eval_path, tokenizer, args.max_input, args.max_output, "eval")
-
+    '''
     def compute_metrics(eval_preds):
         def flatten_dict(d, prefixes=()):
             ret = {}
@@ -47,7 +47,7 @@ def main(args):
 
         rouge = get_rouge(pred_text, label_text, avg=True, ignore_empty=False)
         return flatten_dict(rouge)
-
+    '''
     training_args = Seq2SeqTrainingArguments(
         output_dir=args.ckpt_dir,
         overwrite_output_dir=True,
@@ -73,7 +73,6 @@ def main(args):
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         tokenizer=tokenizer,
-        compute_metrics=compute_metrics,
     )
 
     trainer.train()
