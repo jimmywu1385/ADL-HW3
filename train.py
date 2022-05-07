@@ -1,35 +1,56 @@
-
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
-import torch
 from transformers import T5Tokenizer
-from transformers import AutoModelForSeq2SeqLM, DataCollatorForSeq2Seq
+from transformers import AutoModelForSeq2SeqLM
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
-from dataset import S2SData
+import numpy as np
 
-def set_random(seed):
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.deterministic = True
+from dataset import S2SData
+from tw_rouge import get_rouge
 
 def main(args):
-    set_random(args.random_seed)
-
     tokenizer = T5Tokenizer.from_pretrained(args.pretrained_path)
     model = AutoModelForSeq2SeqLM.from_pretrained(args.pretrained_path)
 
-    train_dataset = S2SData(args.train_path, args.prefix, tokenizer, args.max_input, args.max_output)
-    eval_dataset = S2SData(args.eval_path, args.prefix, tokenizer, args.max_input, args.max_output)
-    
-    data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
+    train_dataset = S2SData(args.train_path, tokenizer, args.max_input, args.max_output, "train")
+    eval_dataset = S2SData(args.eval_path, tokenizer, args.max_input, args.max_output, "eval")
+
+    def compute_metrics(eval_preds):
+        def flatten_dict(d, prefixes=()):
+            ret = {}
+            for k, v in d.items():
+                if isinstance(v, dict):
+                    ret |= flatten_dict(v, prefixes=prefixes + (k,))
+                elif isinstance(v, (int, float)):
+                    ret |= {"_".join(prefixes + (k,)): v}
+                else:
+                    raise ValueError
+            return ret
+        pred_text = []
+        label_text = []
+        for p, l in zip(eval_preds.predictions, eval_preds.label_ids):
+                pred = tokenizer.decode(p, clean_up_tokenization_spaces=True)
+                pred_stop = pred.find(tokenizer.eos_token)
+                if pred_stop is not None:
+                    pred = pred[:pred_stop]
+                pred_text.append(pred)
+
+                label = tokenizer.decode(l, clean_up_tokenization_spaces=True)
+                label_stop = label.find(tokenizer.eos_token)
+                if label_stop is not None:
+                    label = label[:label_stop]
+                label_text.append(label)   
+
+        rouge = get_rouge(pred_text, label_text, avg=True, ignore_empty=False)
+        return flatten_dict(rouge)
 
     training_args = Seq2SeqTrainingArguments(
         output_dir=args.ckpt_dir,
         overwrite_output_dir=True,
-        save_strategy='epoch',
+        save_strategy="epoch",
+        evaluation_strategy="epoch",
+        logging_strategy="epoch",
         seed=args.random_seed,
         fp16=args.fp16,
         num_train_epochs=args.num_epoch,
@@ -43,14 +64,13 @@ def main(args):
         logging_dir=args.log_dir,
     )
 
-
     trainer = Seq2SeqTrainer(
         model,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
-        data_collator=data_collator,
         tokenizer=tokenizer,
+        compute_metrics=compute_metrics,
     )
 
     trainer.train()
@@ -84,11 +104,11 @@ def parse_args() -> Namespace:
         default="./log",
     )
 
-    parser.add_argument("--lr", type=float, default=1e-5)
-    parser.add_argument("--weight_decay", type=float, default=1e-4)
+    parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--weight_decay", type=float, default=5e-5)
 
-    parser.add_argument("--batch_size", type=int, default=4)
-    parser.add_argument("--accum_size", type=int, default=2)
+    parser.add_argument("--batch_size", type=int, default=2)
+    parser.add_argument("--accum_size", type=int, default=8)
 
     parser.add_argument(
         "--max_input", type=int, help="input len", default=256
@@ -97,7 +117,7 @@ def parse_args() -> Namespace:
         "--max_output", type=int, help="output len", default=64
     )    
 
-    parser.add_argument("--num_epoch", type=int, default=2)
+    parser.add_argument("--num_epoch", type=int, default=20)
     parser.add_argument("--use_adafactor", action="store_true")
     parser.add_argument("--no_fp16", dest="fp16", action="store_false")
 
@@ -106,13 +126,6 @@ def parse_args() -> Namespace:
         type=str,
         help="model path.",
         default="google/mt5-small",
-    )
-
-    parser.add_argument(
-        "--prefix",
-        type=str,
-        help="T5 prefix.",
-        default="summarize: ",
     )
     args = parser.parse_args()
     return args
