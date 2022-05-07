@@ -9,6 +9,9 @@ import numpy as np
 from dataset import S2SData
 from tw_rouge import get_rouge
 
+import tensorflow as tf
+tf.config.set_visible_devices([], 'GPU')
+
 def main(args):
     tokenizer = T5Tokenizer.from_pretrained(args.pretrained_path)
     model = AutoModelForSeq2SeqLM.from_pretrained(args.pretrained_path)
