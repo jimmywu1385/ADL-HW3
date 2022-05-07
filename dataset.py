@@ -11,22 +11,24 @@ class S2SData(Dataset):
         max_input,
         max_output,
         split,
+        prefix,
     ):
         self.data = []
         for line in data_path.read_text().split("\n")[:-1]:
             data = json.loads(line)
-        self.data.append(data)
+            self.data.append(data)
             
         self.tokenizer = tokenizer
         self.max_input = max_input
         self.max_output = max_output
         self.split = split
+        self.prefix = prefix
 
     def __len__(self)->int:
         return len(self.data)
 
     def __getitem__(self, index) -> Dict:
-        inputs = self.data[index]["maintext"]
+        inputs = self.prefix + self.data[index]["maintext"]
         model_inputs = self.tokenizer(inputs, max_length=self.max_input, padding="max_length",
                                         truncation=True, return_tensors="pt")
 

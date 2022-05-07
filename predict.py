@@ -22,7 +22,7 @@ def main(args):
     tokenizer = T5Tokenizer.from_pretrained(args.pretrained_path)
     model = AutoModelForSeq2SeqLM.from_pretrained(args.pretrained_path)
 
-    test_dataset = S2SData(args.test_path, tokenizer, args.max_input, args.max_output, "test")
+    test_dataset = S2SData(args.test_path, tokenizer, args.max_input, args.max_output, "test", args.prefix)
     test_datasets = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
 
     model.to(args.device)
@@ -79,9 +79,14 @@ def parse_args() -> Namespace:
         "--pretrained_path",
         type=str,
         help="model path.",
-        default="./ckpt/checkpoint-1",
+        default="./ckpt",
     )
-
+    parser.add_argument(
+        "--prefix",
+        type=str,
+        help="input prefix.",
+        default="summarize: ",
+    )
     args = parser.parse_args()
     return args
 
