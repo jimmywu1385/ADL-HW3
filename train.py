@@ -4,13 +4,14 @@ from pathlib import Path
 from transformers import T5Tokenizer
 from transformers import AutoModelForSeq2SeqLM
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
-import numpy as np
 
 from dataset import S2SData
-#from tw_rouge import get_rouge
+'''
+from tw_rouge import get_rouge
 
-#import tensorflow as tf
-#tf.config.set_visible_devices([], 'GPU')
+import tensorflow as tf
+tf.config.set_visible_devices([], 'GPU')
+'''
 
 def main(args):
     tokenizer = T5Tokenizer.from_pretrained(args.pretrained_path)
@@ -51,7 +52,7 @@ def main(args):
     training_args = Seq2SeqTrainingArguments(
         output_dir=args.ckpt_dir,
         overwrite_output_dir=True,
-        save_strategy="epoch",
+        save_strategy="no",
         evaluation_strategy="epoch",
         logging_strategy="epoch",
         seed=args.random_seed,
@@ -76,6 +77,9 @@ def main(args):
     )
 
     trainer.train()
+
+    tokenizer.save_pretrained(args.ckpt_dir)
+    model.save_pretrained(args.ckpt_dir)
 
 def parse_args() -> Namespace:
     parser = ArgumentParser()

@@ -15,7 +15,7 @@ class S2SData(Dataset):
         self.data = []
         for line in data_path.read_text().split("\n")[:-1]:
             data = json.loads(line)
-            self.data.append(data)
+        self.data.append(data)
             
         self.tokenizer = tokenizer
         self.max_input = max_input
