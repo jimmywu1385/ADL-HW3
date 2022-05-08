@@ -22,7 +22,7 @@ def main(args):
     tokenizer = T5Tokenizer.from_pretrained(args.pretrained_path)
     model = AutoModelForSeq2SeqLM.from_pretrained(args.pretrained_path)
 
-    test_dataset = S2SData(args.test_path, tokenizer, args.max_input, args.max_output, "test", args.prefix)
+    test_dataset = S2SData(args.test_path, tokenizer, args.max_input, args.max_output, "test", args.prefix, args.return_tensor)
     test_datasets = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
 
     model.to(args.device)
@@ -32,8 +32,8 @@ def main(args):
     with torch.no_grad():
         for i, dic in enumerate(test_datasets):
             outputs = model.generate(
-                input_ids=dic["input_ids"].to(args.device),
-                attention_mask=dic['attention_mask'].to(args.device),
+                input_ids=dic["input_ids"].squeeze(1).to(args.device),
+                attention_mask=dic['attention_mask'].squeeze(1).to(args.device),
                 max_length=args.max_output,
                 pad_token_id=tokenizer.pad_token_id,
                 eos_token_id=tokenizer.eos_token_id,
@@ -85,7 +85,13 @@ def parse_args() -> Namespace:
         "--prefix",
         type=str,
         help="input prefix.",
-        default="summarize: ",
+        default="",
+    )
+    parser.add_argument(
+        "--return_tensor",
+        type=str,
+        help="return tensor",
+        default="pt",
     )
     args = parser.parse_args()
     return args

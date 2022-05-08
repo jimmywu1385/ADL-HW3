@@ -17,8 +17,8 @@ def main(args):
     tokenizer = T5Tokenizer.from_pretrained(args.pretrained_path)
     model = AutoModelForSeq2SeqLM.from_pretrained(args.pretrained_path)
 
-    train_dataset = S2SData(args.train_path, tokenizer, args.max_input, args.max_output, "train", args.prefix)
-    eval_dataset = S2SData(args.eval_path, tokenizer, args.max_input, args.max_output, "eval", args.prefix)
+    train_dataset = S2SData(args.train_path, tokenizer, args.max_input, args.max_output, "train", args.prefix, args.return_tensor)
+    eval_dataset = S2SData(args.eval_path, tokenizer, args.max_input, args.max_output, "eval", args.prefix, args.return_tensor)
 
     metric = load_metric("rouge")
 
@@ -145,6 +145,12 @@ def parse_args() -> Namespace:
         type=str,
         help="input prefix.",
         default="",
+    )
+    parser.add_argument(
+        "--return_tensor",
+        type=str,
+        help="return tensor",
+        default=None,
     )
     args = parser.parse_args()
     return args
