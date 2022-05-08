@@ -10,3 +10,4 @@ ckiptagger
 tqdm
 pandas
 jsonlines
+rouge-score

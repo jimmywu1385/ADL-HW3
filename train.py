@@ -1,6 +1,7 @@
 from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
+import json
 import nltk 
 import numpy as np
 from datasets import load_metric
@@ -55,8 +56,8 @@ def main(args):
         output_dir=args.ckpt_dir,
         overwrite_output_dir=True,
         save_strategy="no",
-        evaluation_strategy="steps",
-        logging_strategy="steps",
+        evaluation_strategy="epoch",
+        logging_strategy="epoch",
         seed=args.random_seed,
         fp16=args.fp16,
         num_train_epochs=args.num_epoch,
@@ -67,7 +68,6 @@ def main(args):
         per_device_eval_batch_size=args.batch_size,
         gradient_accumulation_steps=args.accum_size,
         predict_with_generate=True,
-        logging_dir=args.log_dir,
     )
 
     trainer = Seq2SeqTrainer(
@@ -80,6 +80,10 @@ def main(args):
     )
 
     trainer.train()
+
+    with open(args.log_dir / "result.json", "w") as f:
+        for obj in trainer.state.log_history:
+            print(json.dumps(obj, ensure_ascii=False), file=f)
 
     tokenizer.save_pretrained(args.ckpt_dir)
     model.save_pretrained(args.ckpt_dir)
@@ -140,7 +144,7 @@ def parse_args() -> Namespace:
         "--prefix",
         type=str,
         help="input prefix.",
-        default="summarize: ",
+        default="",
     )
     args = parser.parse_args()
     return args
