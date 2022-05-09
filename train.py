@@ -53,8 +53,6 @@ def main(args):
         return result
 
     training_args = Seq2SeqTrainingArguments(
-        output_dir=args.ckpt_dir,
-        overwrite_output_dir=True,
         save_strategy="no",
         evaluation_strategy="epoch",
         logging_strategy="epoch",
