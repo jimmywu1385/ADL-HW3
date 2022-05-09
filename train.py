@@ -2,17 +2,17 @@ from argparse import ArgumentParser, Namespace
 from pathlib import Path
 
 import json
-import nltk 
-import numpy as np
-from datasets import load_metric
+from tw_rouge import get_rouge
 from transformers import T5Tokenizer
 from transformers import AutoModelForSeq2SeqLM
 from transformers import Seq2SeqTrainingArguments, Seq2SeqTrainer
 
 from dataset import S2SData
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
+
 def main(args):
-    nltk.download('punkt')
 
     tokenizer = T5Tokenizer.from_pretrained(args.pretrained_path)
     model = AutoModelForSeq2SeqLM.from_pretrained(args.pretrained_path)
@@ -20,37 +20,34 @@ def main(args):
     train_dataset = S2SData(args.train_path, tokenizer, args.max_input, args.max_output, "train", args.prefix, args.return_tensor)
     eval_dataset = S2SData(args.eval_path, tokenizer, args.max_input, args.max_output, "eval", args.prefix, args.return_tensor)
 
-    metric = load_metric("rouge")
-
-    def postprocess_text(preds, labels):
-        preds = [pred.strip() for pred in preds]
-        labels = [label.strip() for label in labels]
-
-        # rougeLSum expects newline after each sentence
-        preds = ["\n".join(nltk.sent_tokenize(pred)) for pred in preds]
-        labels = ["\n".join(nltk.sent_tokenize(label)) for label in labels]
-
-        return preds, labels
-
     def compute_metrics(eval_preds):
-        preds, labels = eval_preds
-        if isinstance(preds, tuple):
-            preds = preds[0]
-        decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
+         def flatten_dict(d, prefixes=()):
+             ret = {}
+             for k, v in d.items():
+                 if isinstance(v, dict):
+                     ret |= flatten_dict(v, prefixes=prefixes + (k,))
+                 elif isinstance(v, (int, float)):
+                     ret |= {"_".join(prefixes + (k,)): v}
+                 else:
+                     raise ValueError
+             return ret
+         pred_text = []
+         label_text = []
+         for p, l in zip(eval_preds.predictions, eval_preds.label_ids):
+                 pred = tokenizer.decode(p, clean_up_tokenization_spaces=True)
+                 pred_stop = pred.find(tokenizer.eos_token)
+                 if pred_stop is not None:
+                     pred = pred[:pred_stop]
+                 pred_text.append(pred)
 
-        labels = np.where(labels != -100, labels, tokenizer.pad_token_id)
-        decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
+                 label = tokenizer.decode(l, clean_up_tokenization_spaces=True)
+                 label_stop = label.find(tokenizer.eos_token)
+                 if label_stop is not None:
+                     label = label[:label_stop]
+                 label_text.append(label)   
 
-        decoded_preds, decoded_labels = postprocess_text(decoded_preds, decoded_labels)
-
-        result = metric.compute(predictions=decoded_preds, references=decoded_labels, use_stemmer=True)
-
-        result = {key: value.mid.fmeasure * 100 for key, value in result.items()}
-
-        prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds]
-        result["gen_len"] = np.mean(prediction_lens)
-        result = {k: round(v, 4) for k, v in result.items()}
-        return result
+         rouge = get_rouge(pred_text, label_text, avg=True, ignore_empty=False)
+         return flatten_dict(rouge)
 
     training_args = Seq2SeqTrainingArguments(
         output_dir=args.ckpt_dir,
