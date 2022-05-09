@@ -31,12 +31,16 @@ def main(args):
     result = []
     with torch.no_grad():
         for i, dic in enumerate(test_datasets):
+            print("step", i)
             outputs = model.generate(
                 input_ids=dic["input_ids"].squeeze(1).to(args.device),
                 attention_mask=dic['attention_mask'].squeeze(1).to(args.device),
                 max_length=args.max_output,
                 pad_token_id=tokenizer.pad_token_id,
                 eos_token_id=tokenizer.eos_token_id,
+                num_beams=5,
+                no_repeat_ngram_size=2,
+                early_stopping=True
             )
             output_sequences = tokenizer.batch_decode(outputs, skip_special_tokens=True)
             for output_seq, ID in zip(output_sequences, dic["id"]):
@@ -54,7 +58,7 @@ def parse_args() -> Namespace:
         "--test_path",
         type=Path,
         help="Directory to the data.",
-        default="data/sample_test.jsonl",
+        default="data/public.jsonl",
     )
 
     parser.add_argument(
