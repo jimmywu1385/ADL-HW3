@@ -1,4 +1,5 @@
 torch==1.10.2
+-e git+https://github.com/huggingface/transformers.git@2b54206a0809e6807bb8dcc8eeeabd1ad6f4a45b#egg=transformers
 transformers
 datasets
 accelerate
@@ -10,4 +11,3 @@ ckiptagger
 tqdm
 pandas
 jsonlines
-rouge-score
