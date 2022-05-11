@@ -38,9 +38,10 @@ def main(args):
                 max_length=args.max_output,
                 pad_token_id=tokenizer.pad_token_id,
                 eos_token_id=tokenizer.eos_token_id,
-                num_beams=5,
-                no_repeat_ngram_size=2,
-                early_stopping=True
+                num_beams=args.num_beams,
+                top_k=args.top_k,
+                top_p=args.top_p,
+                temperature=args.temperature,
             )
             output_sequences = tokenizer.batch_decode(outputs, skip_special_tokens=True)
             for output_seq, ID in zip(output_sequences, dic["id"]):
@@ -97,6 +98,32 @@ def parse_args() -> Namespace:
         help="return tensor",
         default="pt",
     )
+
+    parser.add_argument(
+        "--num_beams",
+        type=int,
+        help="number of beams.",
+        default=None,
+    )
+    parser.add_argument(
+        "--top_k",
+        type=int,
+        help="top k.",
+        default=None,
+    )
+    parser.add_argument(
+        "--top_p",
+        type=float,
+        help="top p.",
+        default=None,
+    )
+    parser.add_argument(
+        "--temperature",
+        type=float,
+        help="temperature.",
+        default=None,
+    )
+
     args = parser.parse_args()
     return args
 
