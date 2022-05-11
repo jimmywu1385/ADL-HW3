@@ -42,6 +42,7 @@ def main(args):
                 top_k=args.top_k,
                 top_p=args.top_p,
                 temperature=args.temperature,
+                do_sample=args.do_sample,
             )
             output_sequences = tokenizer.batch_decode(outputs, skip_special_tokens=True)
             for output_seq, ID in zip(output_sequences, dic["id"]):
@@ -99,6 +100,7 @@ def parse_args() -> Namespace:
         default="pt",
     )
 
+    parser.add_argument("--use_sample", dest="do_sample", action="store_true")
     parser.add_argument(
         "--num_beams",
         type=int,
