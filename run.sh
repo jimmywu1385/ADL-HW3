@@ -1,1 +1,1 @@
-python3.9 --device cuda --num_beams 5 --test_path ${1} --output_path ${2} 
+python3.9 predict.py --device cuda --num_beams 5 --test_path ${1} --output_path ${2} 
